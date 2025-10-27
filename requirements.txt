@@ -1,0 +1,6 @@
+nltk
+numpy
+sentence-transformers
+tokenizers
+torch
+transformers
