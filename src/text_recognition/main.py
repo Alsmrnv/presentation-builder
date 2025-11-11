@@ -2,6 +2,8 @@ import pytesseract
 import pdf2image
 from transformers import pipeline
 import fitz
+import cv2
+import numpy as np
 
 def text_summary(text: str) -> str:
     """Краткий пересказ данного текста"""
@@ -36,6 +38,29 @@ def pdf_to_text_without_tables(file_path: str) -> str:
     except Exception as e:
         print(f"Ошибка: {e}")
         return ""
+    
+def pdf_to_test(file_path: str) -> str:
+    """Текст из pdf-файла по переданному пути файла"""
+    # TODO: Иногда распознаётся текст с картинок. Лучше, чтобы этого не было
+    images = pdf2image.convert_from_path(file_path)
 
-text = pdf_to_text_without_tables("../pdf_files/example1.pdf")
+    ans = ""
+    for i, image in enumerate(images):
+        img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        _, thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY_INV)
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        mask = np.ones(img.shape[:2], dtype="uint8") * 255
+
+        for cnt in contours:
+            x, y, w, h = cv2.boundingRect(cnt)
+            if w > 100 and h > 50:
+                cv2.rectangle(mask, (x, y), (x+w, y+h), 0, -1)
+
+        text = cv2.bitwise_and(gray, gray, mask=mask)
+        ans += f"\n{pytesseract.image_to_string(text, lang='rus+eng')}\n"
+
+    return ans
+
+text = pdf_to_test("../pdf_files/example1.pdf")
 print(text)
