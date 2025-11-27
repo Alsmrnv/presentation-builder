@@ -62,5 +62,31 @@ def pdf_to_test(file_path: str) -> str:
 
     return ans
 
+def add_table_schema(text: str) -> str:
+    """Добавляет разметку для таблицы по переданному распознанному тексту"""
+    response = requests.post(
+    url="https://openrouter.ai/api/v1/chat/completions",
+    headers={
+        "Authorization": "", # Your API key
+        "Content-Type": "application/json",
+    },
+    data=json.dumps({
+        "model": "google/gemini-2.0-flash-001",
+        "messages": [
+        {
+            "role": "user",
+            "content": [
+            {
+                "type": "text",
+                "text": "У меня есть распознанный из таблицы текст. Помоги мне добавить разметку:\n" + text + \
+                        "\n\n" + "Ты должен вернуть только разметку, без каких-либо других комментариев или объяснений."
+            },
+            ]
+        }
+        ]
+    })
+    )
+    return response.json()['choices'][0]['message']['content']
+
 text = pdf_to_test("../pdf_files/example1.pdf")
 print(text)
