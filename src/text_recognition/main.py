@@ -1,7 +1,7 @@
 import pytesseract
 import pdf2image
-from transformers import pipeline
-import fitz
+# from transformers import pipeline
+# import fitz
 import cv2
 import numpy as np
 
@@ -130,5 +130,22 @@ def add_table_schema(text: str) -> str:
     )
     return response.json()['choices'][0]['message']['content']
 
-images = pdf2image.convert_from_path("../pdf_files/example1.pdf")
-print(image_to_text_without_tables(images[8]))
+def pdf_to_text(pdf_path: str) -> str:
+    """Возвращает распознанный текст с таблицами по переданному пути pdf-файла"""
+    images = pdf2image.convert_from_path(pdf_path)
+    ans = ""
+
+    for i, image in enumerate(images):
+        text_without_tables = image_to_text_without_tables(image)
+        tables_dict = image_to_text_from_tables(image)
+
+        for key, table_text in tables_dict.items():
+            if table_text.strip():
+                processed_table = add_table_schema(table_text)
+                text_without_tables = text_without_tables.replace(key, processed_table)
+        
+        ans += text_without_tables
+    
+    return ans
+
+print(pdf_to_text("../pdf_files/example1.pdf"))
