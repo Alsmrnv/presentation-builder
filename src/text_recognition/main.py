@@ -39,7 +39,7 @@ import numpy as np
 #         print(f"Ошибка: {e}")
 #         return ""
     
-def image_to_test_without_tables(image) -> str:
+def image_to_text_without_tables(image) -> str:
     """Текст из pdf-файла по переданному пути файла. Таблицы игнорируются"""
     # TODO: Иногда распознаётся текст с картинок. Лучше, чтобы этого не было
     ans = "" 
@@ -79,6 +79,31 @@ def image_to_test_without_tables(image) -> str:
 
     return ans
 
+def image_to_text_from_tables(image) -> dict:
+    """Текст из pdf-файла по переданному пути файла. Всё, кроме таблиц, игнорируется"""
+    ans = {}
+    gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
+    _, thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY_INV)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    region_idx = 0
+    
+    for cnt in contours:
+        x, y, w, h = cv2.boundingRect(cnt)
+        if w > 100 and h > 50:
+            region_idx += 1
+            
+            mask = np.zeros(gray.shape[:2], dtype="uint8")
+            cv2.rectangle(mask, (x, y), (x+w, y+h), 255, -1)
+            
+            region = cv2.bitwise_and(gray, gray, mask=mask)
+            text = pytesseract.image_to_string(region, lang='rus+eng').strip()
+            
+            key = f"[IMAGE_{region_idx}]"
+            ans[key] = text
+    
+    return ans
+
 def add_table_schema(text: str) -> str:
     """Добавляет разметку для таблицы по переданному распознанному тексту"""
     response = requests.post(
@@ -106,4 +131,4 @@ def add_table_schema(text: str) -> str:
     return response.json()['choices'][0]['message']['content']
 
 images = pdf2image.convert_from_path("../pdf_files/example1.pdf")
-print(image_to_test_without_tables(images[8]))
+print(image_to_text_without_tables(images[8]))
