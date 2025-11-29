@@ -35,7 +35,6 @@ def generate_slides_for_chunk(chunk: str, chunk_index: int, chunks_num: int, api
         {{
             "title": "Название слайда",
             "description": "Описание содержания",
-            "key_points": ["пункт 1", "пункт 2", "пункт 3"]
         }}
     ]
 }}
@@ -58,8 +57,7 @@ def generate_slides_for_chunk(chunk: str, chunk_index: int, chunks_num: int, api
                             "content": prompt
                         }
                     ],
-                }),
-                timeout=30
+                })
             )
 
             if response.status_code == 200:
@@ -94,7 +92,7 @@ def generate_slides_for_chunk(chunk: str, chunk_index: int, chunks_num: int, api
             else:
                 print(f"Error loading response for chunk {chunk_index}: {response.status_code}")
                 print(f"Answer: {response.text}")
-                return []
+                continue
                 
         except Exception as e:
             print(f"Exception raised while processing chunk {chunk_index + 1}: {str(e)}")

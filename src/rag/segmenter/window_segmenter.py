@@ -13,9 +13,9 @@ class WindowSegmenter(Segmenter):
         chunks = []
         start = 0
         
-        while start < len(text):
+        while start < len(self.data):
             end = start + window_size_chars
-            window = text[start:end]
+            window = self.data[start:end]
             
             last_period = window.rfind('.')
             if last_period > window_size_chars * 0.8: 
