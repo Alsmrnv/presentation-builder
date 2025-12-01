@@ -5,3 +5,4 @@ tokenizers
 torch
 transformers
 python-dotenv
+python-pptx

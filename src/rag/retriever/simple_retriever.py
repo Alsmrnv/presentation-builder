@@ -13,7 +13,7 @@ class SimpleRetriever(Retriever):
         search_segments = [f"search_document: {seg}" for seg in self.segments]
         self.segments_embeddings = self.model.encode(search_segments, convert_to_tensor=True)
 
-    def retrieve_relevant_segments(self, slides, limit=5) -> list[str]:
+    def retrieve_relevant_segments(self, slides: list[str], limit=5) -> list[str]:
         if len(self.segments) == 1:
             return [self.segments[0]]
 
