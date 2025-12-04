@@ -6,3 +6,8 @@ torch
 transformers
 python-dotenv
 python-pptx
+pytesseract
+pdf2image
+opencv-python
+requests
+Pillow
