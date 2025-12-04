@@ -4,3 +4,8 @@ sentence-transformers
 tokenizers
 torch
 transformers
+python-dotenv
+python-pptx
+pytesseract
+pdf2image
+opencv-python
