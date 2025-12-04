@@ -4,6 +4,11 @@ import pdf2image
 # import fitz
 import cv2
 import numpy as np
+import requests
+import json
+import base64
+from io import BytesIO
+from PIL import Image
 
 # def text_summary(text: str) -> str:
 #     """Краткий пересказ данного текста"""
@@ -80,7 +85,7 @@ def image_to_text_without_tables(image) -> str:
     return ans
 
 def image_to_text_from_tables(image) -> dict:
-    """Текст из pdf-файла по переданному пути файла. Всё, кроме таблиц, игнорируется"""
+    """Извлекает изображения таблиц из pdf-файла. Всё, кроме таблиц, игнорируется"""
     ans = {}
     gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
     _, thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY_INV)
@@ -92,20 +97,18 @@ def image_to_text_from_tables(image) -> dict:
         x, y, w, h = cv2.boundingRect(cnt)
         if w > 100 and h > 50:
             region_idx += 1
-            
-            mask = np.zeros(gray.shape[:2], dtype="uint8")
-            cv2.rectangle(mask, (x, y), (x+w, y+h), 255, -1)
-            
-            region = cv2.bitwise_and(gray, gray, mask=mask)
-            text = pytesseract.image_to_string(region, lang='rus+eng').strip()
-            
+            table_region = image.crop((x, y, x + w, y + h))
             key = f"[IMAGE_{region_idx}]"
-            ans[key] = text
+            ans[key] = table_region
     
     return ans
 
-def add_table_schema(text: str) -> str:
-    """Добавляет разметку для таблицы по переданному распознанному тексту"""
+def add_table_schema(table_image: Image.Image) -> str:
+    """Добавляет разметку для таблицы по переданному изображению таблицы"""
+    buffered = BytesIO()
+    table_image.save(buffered, format="PNG")
+    img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+    
     response = requests.post(
     url="https://openrouter.ai/api/v1/chat/completions",
     headers={
@@ -120,9 +123,14 @@ def add_table_schema(text: str) -> str:
             "content": [
             {
                 "type": "text",
-                "text": "У меня есть распознанный из таблицы текст. Помоги мне добавить разметку:\n" + text + \
-                        "\n\n" + "Ты должен вернуть только разметку, без каких-либо других комментариев или объяснений."
+                "text": "У меня есть изображение таблицы. Помоги мне добавить разметку для этой таблицы. Ты должен вернуть только разметку, без каких-либо других комментариев или объяснений."
             },
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/png;base64,{img_base64}"
+                }
+            }
             ]
         }
         ]
@@ -139,10 +147,9 @@ def pdf_to_text(pdf_path: str) -> str:
         text_without_tables = image_to_text_without_tables(image)
         tables_dict = image_to_text_from_tables(image)
 
-        for key, table_text in tables_dict.items():
-            if table_text.strip():
-                processed_table = add_table_schema(table_text)
-                text_without_tables = text_without_tables.replace(key, processed_table)
+        for key, table_image in tables_dict.items():
+            processed_table = add_table_schema(table_image)
+            text_without_tables = text_without_tables.replace(key, processed_table)
         
         ans += text_without_tables
     
