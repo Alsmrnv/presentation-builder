@@ -155,4 +155,4 @@ def pdf_to_text(pdf_path: str) -> str:
     
     return ans
 
-print(pdf_to_text("../pdf_files/example1.pdf"))
+# print(pdf_to_text("../pdf_files/example1.pdf"))

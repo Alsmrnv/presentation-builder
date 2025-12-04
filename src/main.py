@@ -1301,12 +1301,15 @@ from rag.segmenter.paragraph_segmenter import ParagraphSegmenter
 from rag.presentation_gen.slide_generation import create_presentation_plan
 from rag.retriever.paragraph_retriever import ParagraphRetriever
 from rag.presentation_gen.build_presentation import build_presentation
+from text_recognition.pdf_to_text import pdf_to_text
 from pathlib import Path
 
 def main():
     load_dotenv()
 
     OPENROUTER_API_KEY = os.getenv("API_KEY")
+
+    text = pdf_to_text("pdf_files/example1.pdf")
 
     window_segmenter = WindowSegmenter(text)
     chunks = window_segmenter.split()
