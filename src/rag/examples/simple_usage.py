@@ -1,5 +1,5 @@
-from src.rag.retriever.simple_retriever import SimpleRetriever
-from src.rag.segmenter.simple_segmenter import SimpleSegmenter
+from rag.retriever.simple_retriever import SimpleRetriever
+from rag.segmenter.simple_segmenter import SimpleSegmenter
 
 raw_text = """Искусственный интеллект (ИИ) — это обширная область компьютерных наук, занимающаяся созданием машин, способных выполнять задачи, требующие человеческого интеллекта. К ним относятся обучение, логическое рассуждение, восприятие и понимание языка.
 
@@ -15,7 +15,8 @@ raw_text = """Искусственный интеллект (ИИ) — это о
  """
 slides = ["Что такое ИИ?", "Историческое развитие", "Машинное и глубокое обучение", "Примеры применения", "Этика и будущее"]
 
-segmenter = SimpleSegmenter(raw_text)
-segments = segmenter.split()
-retriever = SimpleRetriever(segments)
-print(retriever.retrieve_relevant_segments(slides))
+if __name__ == "__main__":
+    segmenter = SimpleSegmenter(raw_text)
+    segments = segmenter.split()
+    retriever = SimpleRetriever(segments)
+    print(retriever.retrieve_relevant_segments(slides))
