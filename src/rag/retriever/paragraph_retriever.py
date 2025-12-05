@@ -15,7 +15,7 @@ class ParagraphRetriever(Retriever):
 
     def retrieve_relevant_segments(self, slides: list[dict], limit=3) -> list[str]:
         if len(self.segments) == 1:
-            return [self.segments[0]]
+            return [self.segments[0] for i in range(len(slides))]
 
         search_queries = []
         for i, slide in enumerate(slides):
