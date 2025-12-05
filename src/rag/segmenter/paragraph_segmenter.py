@@ -2,7 +2,7 @@ from .segmenter import Segmenter
 import nltk
 
 class ParagraphSegmenter(Segmenter):
-    def __init__(self, data: str, min_sentences: int = 5):
+    def __init__(self, data: str, min_sentences: int = 4):
         super().__init__(data)
         self.min_sentences = min_sentences
     
