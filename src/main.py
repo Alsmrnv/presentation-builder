@@ -520,6 +520,7 @@ from rag.segmenter.paragraph_segmenter import ParagraphSegmenter
 from rag.presentation_gen.slide_generation import create_presentation_plan
 from rag.retriever.paragraph_retriever import ParagraphRetriever
 from rag.presentation_gen.build_presentation import build_presentation
+from visgen.simple_enchancer import enhance_slides_with_visualizations
 from text_recognition.pdf_to_text import pdf_to_text
 from pathlib import Path
 
@@ -542,16 +543,57 @@ def main():
     relevant_segments = retriever.retrieve_relevant_segments(slides)
     retriever.clear()
 
-    build_presentation(slides, Path("presentation.pptx"))
     
-    print(f"Number of slides: {len(slides)}")
-    print(f"Number of relevant segments: {len(relevant_segments)}")
+    # --------------------------------------------------
+    # НОВЫЙ ЭТАП: Добавление визуализаций
+    # --------------------------------------------------
+    print(f"\n{'='*60}")
+    print("ЭТАП: ДОБАВЛЕНИЕ ВИЗУАЛИЗАЦИЙ К СЛАЙДАМ")
+    print(f"{'='*60}")
     
-    for i, slide in enumerate(slides):
-        print(f"\n--- Slide {i+1} ---")
-        print(f"Title: {slide.get('title', 'No title')}")
-        print(f"Description: {slide.get('description', 'No description')}")
-        print(f"Relevent segment:\n {relevant_segments[i]}")
+    enhanced_slides = enhance_slides_with_visualizations(
+        slides=slides,
+        api_key=OPENROUTER_API_KEY,
+        temp_dir="presentation_visualizations",
+        delay=0.5
+    )
+    
+    vis_count = sum(1 for s in enhanced_slides if s.get("visualization", {}).get("needed"))
+    print(f"\n ИТОГО: {vis_count} слайдов из {len(enhanced_slides)} получили визуализации")
+    
+    build_presentation(enhanced_slides, Path("presentation_with_visualizations.pptx"))
+    
+    print(f"\n{'='*60}")
+    print("ПРЕЗЕНТАЦИЯ СОЗДАНА!")
+    print(f"{'='*60}")
+    print(f"Всего слайдов: {len(enhanced_slides)}")
+    print(f"С визуализациями: {vis_count}")
+    print(f"Без визуализаций: {len(enhanced_slides) - vis_count}")
+    print(f"Файл: presentation_with_visualizations.pptx")
+    print(f"{'='*60}")
+    
+    for i, slide in enumerate(enhanced_slides):
+        print(f"\n--- Слайд {i+1} ---")
+        print(f"Заголовок: {slide.get('title', 'No title')}")
+        vis = slide.get("visualization", {})
+        if vis.get("needed"):
+            print(f"Визуализация: {vis.get('type')}")
+            print(f"   Файл: {Path(vis.get('image_path', '')).name}")
+            print(f"   Заголовок графика: {vis.get('chart_title', '')}")
+        else:
+            print(f"Без визуализации")
+
+
+    # build_presentation(slides, Path("presentation.pptx"))
+    
+    # print(f"Number of slides: {len(slides)}")
+    # print(f"Number of relevant segments: {len(relevant_segments)}")
+    
+    # for i, slide in enumerate(slides):
+    #     print(f"\n--- Slide {i+1} ---")
+    #     print(f"Title: {slide.get('title', 'No title')}")
+    #     print(f"Description: {slide.get('description', 'No description')}")
+    #     print(f"Relevent segment:\n {relevant_segments[i]}")
     
 
 
