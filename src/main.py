@@ -517,8 +517,10 @@ import os
 from setup.setup import setup
 from rag.segmenter.window_segmenter import WindowSegmenter
 from rag.segmenter.paragraph_segmenter import ParagraphSegmenter
+from rag.segmenter.page_segmenter import PageSegmenter
 from rag.presentation_gen.slide_generation import create_presentation_plan
 from rag.retriever.paragraph_retriever import ParagraphRetriever
+from rag.retriever.page_retriever import PageRetriever
 from rag.presentation_gen.build_presentation import build_presentation
 from text_recognition.pdf_to_text import pdf_to_text
 from pathlib import Path
@@ -535,10 +537,10 @@ def main():
 
     slides = create_presentation_plan(chunks, OPENROUTER_API_KEY)
 
-    segmenter = ParagraphSegmenter(text)
+    segmenter = PageSegmenter(text)
     segments = segmenter.split()
 
-    retriever = ParagraphRetriever(segments)
+    retriever = PageRetriever(segments)
     relevant_segments = retriever.retrieve_relevant_segments(slides)
     retriever.clear()
 
