@@ -361,14 +361,6 @@ class Renderer:
             })
         
         if layout:
-            if 'title' in layout and chart_type != 'table':
-                layout_config['title'] = {
-                    'text': layout['title'],
-                    'font': dict(size=13, family="Arial", color='black'),
-                    'x': 0.5,
-                    'xanchor': 'center',
-                    'y': 0.95
-                }
             if 'xaxis_title' in layout:
                 layout_config['xaxis_title'] = layout['xaxis_title']
             if 'yaxis_title' in layout:
