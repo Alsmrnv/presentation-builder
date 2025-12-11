@@ -35,8 +35,6 @@ def _analyze_slide_for_visualization(slide: Dict[str, Any], api_key: str) -> Dic
 - "scatter": для корреляций
 - "histogram": для распределений
 
-Если чисел нет - визуализация не нужна.
-
 Верни ТОЛЬКО JSON в формате:
 {{
     "needed": true/false,

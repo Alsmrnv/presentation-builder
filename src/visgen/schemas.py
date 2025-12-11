@@ -44,6 +44,30 @@ class BaseVisualizationSchema(BaseModel):
     data: dict[str, Any]
     layout: Optional[dict[str, Any]] = Field(default_factory=dict)
 
+class BarChartSchema(BaseVisualizationSchema):
+    """Схема для столбчатой диаграммы"""
+    chart_type: str = Field("bar", pattern="^bar$")
+
+    @field_validator('data')
+    @classmethod
+    def validate_bar_data(cls, v: dict[str, Any]) -> dict[str, Any]:
+        if 'x' not in v or 'y' not in v:
+            raise ValueError('Bar chart must have x and y arrays')
+
+        x, y = v['x'], v['y']
+
+        if len(x) != len(y):
+            raise ValueError('X and Y arrays must have same length')
+        if len(x) < 2:
+            raise ValueError('Bar chart must have at least 2 bars for meaningful visualization')
+        if len(x) > 12:
+            raise ValueError('Maximum 12 bars allowed for readability (optimal 3-8)')
+        if not all(isinstance(item, (int, float)) for item in y):
+            raise ValueError('Y array must contain only numbers')
+        if not all(isinstance(item, str) for item in x):
+            raise ValueError('X array must contain only strings')
+
+        return v
 
 class LineChartSchema(BaseVisualizationSchema):
     """Схема для линейного графика"""
@@ -59,34 +83,12 @@ class LineChartSchema(BaseVisualizationSchema):
 
         if len(x) != len(y):
             raise ValueError('X and Y arrays must have same length')
+        if len(x) < 3:
+            raise ValueError('Line chart must have at least 3 data points for meaningful trend')
         if len(x) > 20:
-            raise ValueError('Maximum 20 data points allowed')
+            raise ValueError('Maximum 20 data points allowed (optimal 5-15)')
         if not all(isinstance(item, (int, float)) for item in y):
             raise ValueError('Y array must contain only numbers')
-
-        return v
-
-
-class BarChartSchema(BaseVisualizationSchema):
-    """Схема для столбчатой диаграммы"""
-    chart_type: str = Field("bar", pattern="^bar$")
-
-    @field_validator('data')
-    @classmethod
-    def validate_bar_data(cls, v: dict[str, Any]) -> dict[str, Any]:
-        if 'x' not in v or 'y' not in v:
-            raise ValueError('Bar chart must have x and y arrays')
-
-        x, y = v['x'], v['y']
-
-        if len(x) != len(y):
-            raise ValueError('X and Y arrays must have same length')
-        if len(x) > 20:
-            raise ValueError('Maximum 20 bars allowed')
-        if not all(isinstance(item, (int, float)) for item in y):
-            raise ValueError('Y array must contain only numbers')
-        if not all(isinstance(item, str) for item in x):
-            raise ValueError('X array must contain only strings')
 
         return v
 
@@ -104,8 +106,10 @@ class PieChartSchema(BaseVisualizationSchema):
 
         if len(labels) != len(values):
             raise ValueError('Labels and values arrays must have same length')
-        if len(labels) > 10:
-            raise ValueError('Maximum 10 segments allowed')
+        if len(labels) < 2:
+            raise ValueError('Pie chart must have at least 2 segments')
+        if len(labels) > 8:
+            raise ValueError('Maximum 8 segments allowed for readability (optimal 3-6)')
         if not all(isinstance(item, (int, float)) and item >= 0 for item in values):
             raise ValueError('Values array must contain only non-negative numbers')
         if not all(isinstance(item, str) for item in labels):
@@ -127,8 +131,10 @@ class ScatterChartSchema(BaseVisualizationSchema):
 
         if len(x) != len(y):
             raise ValueError('X and Y arrays must have same length')
+        if len(x) < 5:
+            raise ValueError('Scatter chart must have at least 5 points to identify patterns')
         if len(x) > 100:
-            raise ValueError('Maximum 100 data points allowed')
+            raise ValueError('Maximum 100 data points allowed (optimal 10-50)')
         if not all(isinstance(item, (int, float)) for item in x):
             raise ValueError('X array must contain only numbers')
         if not all(isinstance(item, (int, float)) for item in y):
@@ -150,6 +156,9 @@ class HistogramSchema(BaseVisualizationSchema):
 
         if len(x) > 1000:
             raise ValueError('Maximum 1000 data points allowed')
+        # ДОБАВИТЬ ЭТО:
+        if len(x) < 10:
+            raise ValueError('Histogram must have at least 10 values for meaningful distribution')
         if not all(isinstance(item, (int, float)) for item in x):
             raise ValueError('X array must contain only numbers')
 
@@ -169,10 +178,14 @@ class TableSchema(BaseVisualizationSchema):
 
         if not all(isinstance(item, str) for item in header):
             raise ValueError('Header array must contain only strings')
-        if len(header) > 20:
-            raise ValueError('Maximum 20 columns allowed')
-        if len(cells) > 100:
-            raise ValueError('Maximum 100 rows allowed')
+        if len(header) < 2:
+            raise ValueError('Table must have at least 2 columns')
+        if len(header) > 6:
+            raise ValueError('Maximum 6 columns allowed for readability (optimal 3-5)')
+        if len(cells) < 1:
+            raise ValueError('Table must have at least 1 row')
+        if len(cells) > 15:
+            raise ValueError('Maximum 15 rows allowed (optimal 3-10)')
         if not all(isinstance(row, list) for row in cells):
             raise ValueError('Cells must be array of arrays')
 

@@ -529,20 +529,22 @@ def main():
 
     OPENROUTER_API_KEY = os.getenv("API_KEY")
 
-    text = pdf_to_text("pdf_files/example1.pdf")
+    # text = pdf_to_text("src/pdf_files/example1.pdf")
 
     window_segmenter = WindowSegmenter(text)
     chunks = window_segmenter.split()
 
     slides = create_presentation_plan(chunks, OPENROUTER_API_KEY)
 
-    segmenter = ParagraphSegmenter(text)
-    segments = segmenter.split()
+    #ОТКЛЮЧЕНО ДЛЯ ТЕТСИРОВАНИЯ
+    # segmenter = ParagraphSegmenter(text)
+    # segments = segmenter.split()
 
-    retriever = ParagraphRetriever(segments)
-    relevant_segments = retriever.retrieve_relevant_segments(slides)
-    retriever.clear()
+    # retriever = ParagraphRetriever(segments)
+    # relevant_segments = retriever.retrieve_relevant_segments(slides)
+    # retriever.clear()
 
+    relevant_segments = [""] * len(slides)
     
     # --------------------------------------------------
     # НОВЫЙ ЭТАП: Добавление визуализаций
