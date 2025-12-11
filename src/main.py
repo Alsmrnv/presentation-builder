@@ -529,7 +529,7 @@ def main():
 
     OPENROUTER_API_KEY = os.getenv("API_KEY")
 
-    # text = pdf_to_text("src/pdf_files/example1.pdf")
+    # text, images_dict = pdf_to_text("src/pdf_files/example1.pdf")
 
     window_segmenter = WindowSegmenter(text)
     chunks = window_segmenter.split()
