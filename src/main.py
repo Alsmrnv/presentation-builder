@@ -725,7 +725,7 @@ def main():
             slides=slides_without_images,
             api_key=OPENROUTER_API_KEY,
             temp_dir="presentation_visualizations",
-            delay=0.5
+            delay=0.2  # Уменьшаем задержку для ускорения
         )
         
         for i, slide in enumerate(enhanced_slides):

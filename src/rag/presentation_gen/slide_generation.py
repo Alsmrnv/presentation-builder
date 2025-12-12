@@ -119,7 +119,7 @@ def generate_slides_for_chunk(chunk: str, chunk_index: int, chunks_num: int, api
     return []
 
 
-def generate_all_slides_plans(chunks: List[str], api_key: str, delay: float = 1.0, relevant_segments: list = None) -> List[List[Dict]]: 
+def generate_all_slides_plans(chunks: List[str], api_key: str, delay: float = 0.5, relevant_segments: list = None) -> List[List[Dict]]:
     slides = []
     
     if relevant_segments is None:
@@ -133,7 +133,7 @@ def generate_all_slides_plans(chunks: List[str], api_key: str, delay: float = 1.
         slides.append(chunk_slides)
         
         if i < len(chunks) - 1:
-            time.sleep(delay)
+            time.sleep(delay)  
     
     return slides
 

@@ -51,49 +51,25 @@ API_KEY = os.getenv("GEMINI_API_KEY")
 #         return ""
 
 def check_if_table(table_image: Image.Image) -> bool:
-    """Проверяет, является ли изображение таблицей"""
-    buffered = BytesIO()
-    table_image.save(buffered, format="PNG")
-    img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+    """Проверяет, является ли изображение таблицей. Используем упрощенную эвристику для ускорения."""
     
-    response = requests.post(
-        url="https://openrouter.ai/api/v1/chat/completions",
-        headers={
-            "Authorization": API_KEY,
-            "Content-Type": "application/json",
-        },
-        data=json.dumps({
-            "model": "google/gemini-2.0-flash-001",
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "Посмотри на это изображение. Это таблица? Ответь только 'ДА' если это таблица, или 'НЕТ' если это не таблица (например, график, диаграмма, картинка и т.д.)."
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/png;base64,{img_base64}"
-                            }
-                        }
-                    ]
-                }
-            ]
-        })
-    )
-    try:
-        result = response.json()['choices'][0]['message']['content'].strip().upper()
-        return result.startswith('ДА') or result.startswith('YES')
-    except KeyError:
-        response_data = response.json()
-        if 'choices' in response_data:
-            return response_data['choices'][0]['message']['content'].strip().upper().startswith('ДА') or response_data['choices'][0]['message']['content'].strip().upper().startswith('YES')
-        elif 'response' in response_data:
-            return response_data['response'].strip().upper().startswith('ДА') or response_data['response'].strip().upper().startswith('YES')
-        else:
-            return False
+    import cv2
+    import numpy as np
+    
+    opencv_image = cv2.cvtColor(np.array(table_image), cv2.COLOR_RGB2GRAY)
+    
+    _, thresh = cv2.threshold(opencv_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    
+    horizontal_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (40, 1))
+    vertical_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 40))
+    
+    horizontal_lines = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, horizontal_kernel)
+    vertical_lines = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, vertical_kernel)
+    
+    horizontal_count = cv2.countNonZero(horizontal_lines)
+    vertical_count = cv2.countNonZero(vertical_lines)
+    
+    return horizontal_count > 50 and vertical_count > 50 
     
 def image_to_text_without_pictures_and_tables(image, start_idx: int = 0) -> tuple[str, list, int]:
     """Текст из pdf-файла по переданному пути файла. Картинки и таблицы игнорируются"""
@@ -159,47 +135,25 @@ def add_table_schema(table_image: Image.Image) -> str:
     if not check_if_table(table_image):
         return ""
     
-    buffered = BytesIO()
-    table_image.save(buffered, format="PNG")
-    img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
     
-    response = requests.post(
-    url="https://openrouter.ai/api/v1/chat/completions",
-    headers={
-        "Authorization": API_KEY,
-        "Content-Type": "application/json",
-    },
-    data=json.dumps({
-        "model": "google/gemini-2.0-flash-001",
-        "messages": [
-        {
-            "role": "user",
-            "content": [
-            {
-                "type": "text",
-                "text": "У меня есть изображение таблицы. Помоги мне добавить разметку для этой таблицы. Ты должен вернуть только разметку, без каких-либо других комментариев или объяснений."
-            },
-            {
-                "type": "image_url",
-                "image_url": {
-                    "url": f"data:image/png;base64,{img_base64}"
-                }
-            }
-            ]
-        }
-        ]
-    })
-    )
+    import cv2
+    import numpy as np
+    from PIL import Image
+    
+    opencv_image = cv2.cvtColor(np.array(table_image), cv2.COLOR_RGB2GRAY)
+    
+    _, thresh = cv2.threshold(opencv_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    
     try:
-        return response.json()['choices'][0]['message']['content']
-    except KeyError:
-        response_data = response.json()
-        if 'choices' in response_data:
-            return response_data['choices'][0]['message']['content']
-        elif 'response' in response_data:
-            return response_data['response']
+        import pytesseract
+        table_text = pytesseract.image_to_string(thresh, lang='rus+eng')
+        
+        if table_text.strip():
+            return f"Таблица:\n{table_text}"
         else:
-            return "Не удалось обработать таблицу"
+            return "[ТАБЛИЦА]"
+    except:
+        return "[ТАБЛИЦА]"
 
 def pdf_to_text(pdf_path: str) -> tuple[str, dict]:
     """Возвращает распознанный текст с маркерами изображений (IMAGE_i) и словарь изображений с ключами в виде маркеров.

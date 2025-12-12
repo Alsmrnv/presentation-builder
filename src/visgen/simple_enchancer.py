@@ -183,7 +183,7 @@ def enhance_slides_with_visualizations(
     slides: List[Dict[str, Any]],
     api_key: str,
     temp_dir: str = "temp_visualizations",
-    delay: float = 1.0
+    delay: float = 0.3
 ) -> List[Dict[str, Any]]:
     """
     Основная функция: добавляет PNG визуализации к слайдам
@@ -220,7 +220,7 @@ def enhance_slides_with_visualizations(
                 
                 print(f"  → Нужна {vis_type} визуализация: {chart_title}")
                 
-                time.sleep(delay)
+                time.sleep(delay/2) 
                 json_data = _generate_visualization_data(vis_type, data_context, chart_title, api_key)
                 
                 if json_data:
@@ -238,17 +238,17 @@ def enhance_slides_with_visualizations(
                                 "chart_title": chart_title,
                                 "data_context": data_context
                             }
-                            print(f"  ✓ PNG визуализация добавлена")
+                            print(f" ✓ PNG визуализация добавлена")
                         else:
                             print(f"  ✗ Не удалось создать PNG")
                             enhanced_slide["visualization"] = {"needed": False}
                     
                     except Exception as e:
-                        print(f"  ✗ Ошибка валидации: {e}")
+                        print(f" ✗ Ошибка валидации: {e}")
                         enhanced_slide["visualization"] = {"needed": False}
                 
                 else:
-                    print(f"  ✗ Не удалось сгенерировать данные")
+                    print(f" ✗ Не удалось сгенерировать данные")
                     enhanced_slide["visualization"] = {"needed": False}
             
             else:
@@ -261,7 +261,7 @@ def enhance_slides_with_visualizations(
         enhanced_slides.append(enhanced_slide)
         
         if i < len(slides) - 1:
-            time.sleep(delay)
+            time.sleep(delay/2)  
     
     total_with_vis = sum(1 for s in enhanced_slides if s.get("visualization", {}).get("needed"))
     
