@@ -83,8 +83,17 @@ def check_if_table(table_image: Image.Image) -> bool:
             ]
         })
     )
-    result = response.json()['choices'][0]['message']['content'].strip().upper()
-    return result.startswith('ДА') or result.startswith('YES')
+    try:
+        result = response.json()['choices'][0]['message']['content'].strip().upper()
+        return result.startswith('ДА') or result.startswith('YES')
+    except KeyError:
+        response_data = response.json()
+        if 'choices' in response_data:
+            return response_data['choices'][0]['message']['content'].strip().upper().startswith('ДА') or response_data['choices'][0]['message']['content'].strip().upper().startswith('YES')
+        elif 'response' in response_data:
+            return response_data['response'].strip().upper().startswith('ДА') or response_data['response'].strip().upper().startswith('YES')
+        else:
+            return False
     
 def image_to_text_without_pictures_and_tables(image, start_idx: int = 0) -> tuple[str, list, int]:
     """Текст из pdf-файла по переданному пути файла. Картинки и таблицы игнорируются"""
@@ -181,7 +190,16 @@ def add_table_schema(table_image: Image.Image) -> str:
         ]
     })
     )
-    return response.json()['choices'][0]['message']['content']
+    try:
+        return response.json()['choices'][0]['message']['content']
+    except KeyError:
+        response_data = response.json()
+        if 'choices' in response_data:
+            return response_data['choices'][0]['message']['content']
+        elif 'response' in response_data:
+            return response_data['response']
+        else:
+            return "Не удалось обработать таблицу"
 
 def pdf_to_text(pdf_path: str) -> tuple[str, dict]:
     """Возвращает распознанный текст с маркерами изображений (IMAGE_i) и словарь изображений с ключами в виде маркеров.
@@ -206,4 +224,3 @@ def pdf_to_text(pdf_path: str) -> tuple[str, dict]:
     
     return ans, images_dict
 
-# print(pdf_to_text("../pdf_files/example1.pdf"))

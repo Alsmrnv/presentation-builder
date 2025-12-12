@@ -184,9 +184,10 @@ def _add_slide_with_vertical_visualization(slide, slide_data, slide_width, slide
             
             available_aspect = image_width / image_height
             
-            if img_aspect > available_aspect: 
+            if img_aspect > available_aspect:
                 final_width = image_width
                 final_height = image_width / img_aspect
+            else:
                 final_height = image_height
                 final_width = image_height * img_aspect
             

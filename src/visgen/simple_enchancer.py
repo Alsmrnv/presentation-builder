@@ -67,7 +67,16 @@ def _analyze_slide_for_visualization(slide: Dict[str, Any], api_key: str) -> Dic
         )
         
         if response.status_code == 200:
-            content = response.json()['choices'][0]['message']['content']
+            response_data = response.json()
+            try:
+                content = response_data['choices'][0]['message']['content']
+            except KeyError:
+                if 'choices' in response_data:
+                    content = response_data['choices'][0]['message']['content']
+                elif 'response' in response_data:
+                    content = response_data['response']
+                else:
+                    content = ""
             
             cleaned = content.strip()
             for prefix in ['```json', '```']:
@@ -116,7 +125,16 @@ def _generate_visualization_data(vis_type: str, data_context: str,
         )
         
         if response.status_code == 200:
-            content = response.json()['choices'][0]['message']['content']
+            response_data = response.json()
+            try:
+                content = response_data['choices'][0]['message']['content']
+            except KeyError:
+                if 'choices' in response_data:
+                    content = response_data['choices'][0]['message']['content']
+                elif 'response' in response_data:
+                    content = response_data['response']
+                else:
+                    content = ""
             
             cleaned = content.strip()
             for prefix in ['```json', '```']:
