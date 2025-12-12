@@ -3,7 +3,7 @@ import torch
 
 from .retriever import Retriever
 
-class ParagraphRetriever(Retriever):
+class PageRetriever(Retriever):
     def __init__(self, segments: list[str]):
         super().__init__(segments)
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -13,7 +13,7 @@ class ParagraphRetriever(Retriever):
         search_segments = [f"search_document: {seg}" for seg in self.segments]
         self.segments_embeddings = self.model.encode(search_segments, convert_to_tensor=True)
 
-    def retrieve_relevant_segments(self, slides: list[dict], limit=3) -> list[str]:
+    def retrieve_relevant_segments(self, slides: list[dict], limit=2) -> list[str]:
         if len(self.segments) == 1:
             return [self.segments[0] for i in range(len(slides))]
 
@@ -32,11 +32,7 @@ class ParagraphRetriever(Retriever):
         for i, (slide, query_embedding) in enumerate(zip(slides, query_embeddings)):
             sim_scores = (query_embedding @ self.segments_embeddings.T).squeeze(0)
             _, topk_indices = torch.topk(sim_scores, k=limit)
-            # top_segments = " ".join([self.segments[idx] for idx in topk_indices])
             top_segments = " ".join([self.segments[idx] for idx in sorted(topk_indices.tolist())])
-            
-            # print(f"Slide {i + 1} - '{slide.get('title', 'No title')}':")
-            # print(f"Relevant segments: {top_segments}\n")
             
             relevant_slide_segments.append(top_segments)
 
