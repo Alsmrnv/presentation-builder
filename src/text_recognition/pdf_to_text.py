@@ -1,13 +1,7 @@
 import pytesseract
 import pdf2image
-# from transformers import pipeline
-# import fitz
 import cv2
 import numpy as np
-import requests
-import json
-import base64
-from io import BytesIO
 from PIL import Image
 from dotenv import load_dotenv
 import os
@@ -15,40 +9,6 @@ import os
 load_dotenv()
 
 API_KEY = os.getenv("GEMINI_API_KEY")
-
-# def text_summary(text: str) -> str:
-#     """Краткий пересказ данного текста"""
-#     summarizer = pipeline("summarization", model="IlyaGusev/rut5_base_sum_gazeta")
-#     result = summarizer(text, max_length=30, min_length=15)
-#     return result[0]['summary_text']
-
-# def pdf_to_text_without_pictures_tables(file_path: str) -> str:
-#     """Текст из pdf-файла по переданному пути файла
-#        (работает для файлов без картинок и таблиц)"""
-#     images = pdf2image.convert_from_path(file_path)
-    
-#     ans = ""
-#     for i, image in enumerate(images):
-#         page_text = pytesseract.image_to_string(image, lang='rus+eng')
-#         ans += f"\n{page_text}\n"
-    
-#     return ans
-
-# def pdf_to_text_without_tables(file_path: str) -> str:
-#     """Текст из pdf-файла по переданному пути файла
-#        (работает для файлов без таблиц)"""
-#     ans = ""
-#     try:
-#         doc = fitz.open(file_path)
-        
-#         for i, image in enumerate(doc):
-#             ans += image.get_text() + "\n"
-            
-#         doc.close()
-#         return ans
-#     except Exception as e:
-#         print(f"Ошибка: {e}")
-#         return ""
 
 def check_if_table(table_image: Image.Image) -> bool:
     """Проверяет, является ли изображение таблицей. Используем упрощенную эвристику для ускорения."""
@@ -73,7 +33,6 @@ def check_if_table(table_image: Image.Image) -> bool:
     
 def image_to_text_without_pictures_and_tables(image, start_idx: int = 0) -> tuple[str, list, int]:
     """Текст из pdf-файла по переданному пути файла. Картинки и таблицы игнорируются"""
-    # TODO: Иногда распознаётся текст с картинок. Лучше, чтобы этого не было
     ans = "" 
     gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
     _, thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY_INV)
@@ -177,4 +136,3 @@ def pdf_to_text(pdf_path: str) -> tuple[str, dict]:
         ans += text_without_tables
     
     return ans, images_dict
-
