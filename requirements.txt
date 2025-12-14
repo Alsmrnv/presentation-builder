@@ -16,3 +16,5 @@ Pillow
 kaleido==0.2.1 
 plotly>=5.18.0
 pydantic>=2.0.0
+
+python-telegram-bot>=20.0
