@@ -1,52 +1,38 @@
 import pytesseract
 import pdf2image
-# from transformers import pipeline
-# import fitz
 import cv2
 import numpy as np
-import requests
-import json
-import base64
-from io import BytesIO
 from PIL import Image
+from dotenv import load_dotenv
+import os
 
-# def text_summary(text: str) -> str:
-#     """Краткий пересказ данного текста"""
-#     summarizer = pipeline("summarization", model="IlyaGusev/rut5_base_sum_gazeta")
-#     result = summarizer(text, max_length=30, min_length=15)
-#     return result[0]['summary_text']
+load_dotenv()
 
-# def pdf_to_text_without_pictures_tables(file_path: str) -> str:
-#     """Текст из pdf-файла по переданному пути файла
-#        (работает для файлов без картинок и таблиц)"""
-#     images = pdf2image.convert_from_path(file_path)
-    
-#     ans = ""
-#     for i, image in enumerate(images):
-#         page_text = pytesseract.image_to_string(image, lang='rus+eng')
-#         ans += f"\n{page_text}\n"
-    
-#     return ans
+API_KEY = os.getenv("GEMINI_API_KEY")
 
-# def pdf_to_text_without_tables(file_path: str) -> str:
-#     """Текст из pdf-файла по переданному пути файла
-#        (работает для файлов без таблиц)"""
-#     ans = ""
-#     try:
-#         doc = fitz.open(file_path)
-        
-#         for i, image in enumerate(doc):
-#             ans += image.get_text() + "\n"
-            
-#         doc.close()
-#         return ans
-#     except Exception as e:
-#         print(f"Ошибка: {e}")
-#         return ""
+def check_if_table(table_image: Image.Image) -> bool:
+    """Проверяет, является ли изображение таблицей. Используем упрощенную эвристику для ускорения."""
     
-def image_to_text_without_tables(image) -> str:
-    """Текст из pdf-файла по переданному пути файла. Таблицы игнорируются"""
-    # TODO: Иногда распознаётся текст с картинок. Лучше, чтобы этого не было
+    import cv2
+    import numpy as np
+    
+    opencv_image = cv2.cvtColor(np.array(table_image), cv2.COLOR_RGB2GRAY)
+    
+    _, thresh = cv2.threshold(opencv_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    
+    horizontal_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (40, 1))
+    vertical_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 40))
+    
+    horizontal_lines = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, horizontal_kernel)
+    vertical_lines = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, vertical_kernel)
+    
+    horizontal_count = cv2.countNonZero(horizontal_lines)
+    vertical_count = cv2.countNonZero(vertical_lines)
+    
+    return horizontal_count > 50 and vertical_count > 50 
+    
+def image_to_text_without_pictures_and_tables(image, start_idx: int = 0) -> tuple[str, list, int]:
+    """Текст из pdf-файла по переданному пути файла. Картинки и таблицы игнорируются"""
     ans = "" 
     gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
     _, thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY_INV)
@@ -54,7 +40,7 @@ def image_to_text_without_tables(image) -> str:
     mask = np.ones(gray.shape[:2], dtype="uint8") * 255
 
     masked_regions = []
-    region_idx = 0
+    region_idx = start_idx
     
     for cnt in contours:
         x, y, w, h = cv2.boundingRect(cnt)
@@ -82,16 +68,16 @@ def image_to_text_without_tables(image) -> str:
     
     ans += f"\n{pytesseract.image_to_string(text, lang='rus+eng')}\n"
 
-    return ans
+    return ans, region_idx
 
-def image_to_text_from_tables(image) -> dict:
-    """Извлекает изображения таблиц из pdf-файла. Всё, кроме таблиц, игнорируется"""
+def image_to_text_from_tables(image, start_idx: int = 0) -> tuple[dict, int]:
+    """Извлекает таблицы и картинки из pdf-файла"""
     ans = {}
     gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
     _, thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY_INV)
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
-    region_idx = 0
+    region_idx = start_idx
     
     for cnt in contours:
         x, y, w, h = cv2.boundingRect(cnt)
@@ -101,58 +87,52 @@ def image_to_text_from_tables(image) -> dict:
             key = f"[IMAGE_{region_idx}]"
             ans[key] = table_region
     
-    return ans
+    return ans, region_idx
 
 def add_table_schema(table_image: Image.Image) -> str:
     """Добавляет разметку для таблицы по переданному изображению таблицы"""
-    buffered = BytesIO()
-    table_image.save(buffered, format="PNG")
-    img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+    if not check_if_table(table_image):
+        return ""
     
-    response = requests.post(
-    url="https://openrouter.ai/api/v1/chat/completions",
-    headers={
-        "Authorization": "", # Your API key
-        "Content-Type": "application/json",
-    },
-    data=json.dumps({
-        "model": "google/gemini-2.0-flash-001",
-        "messages": [
-        {
-            "role": "user",
-            "content": [
-            {
-                "type": "text",
-                "text": "У меня есть изображение таблицы. Помоги мне добавить разметку для этой таблицы. Ты должен вернуть только разметку, без каких-либо других комментариев или объяснений."
-            },
-            {
-                "type": "image_url",
-                "image_url": {
-                    "url": f"data:image/png;base64,{img_base64}"
-                }
-            }
-            ]
-        }
-        ]
-    })
-    )
-    return response.json()['choices'][0]['message']['content']
+    
+    import cv2
+    import numpy as np
+    from PIL import Image
+    
+    opencv_image = cv2.cvtColor(np.array(table_image), cv2.COLOR_RGB2GRAY)
+    
+    _, thresh = cv2.threshold(opencv_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    
+    try:
+        import pytesseract
+        table_text = pytesseract.image_to_string(thresh, lang='rus+eng')
+        
+        if table_text.strip():
+            return f"Таблица:\n{table_text}"
+        else:
+            return "[ТАБЛИЦА]"
+    except:
+        return "[ТАБЛИЦА]"
 
-def pdf_to_text(pdf_path: str) -> str:
-    """Возвращает распознанный текст с таблицами по переданному пути pdf-файла"""
+def pdf_to_text(pdf_path: str) -> tuple[str, dict]:
+    """Возвращает распознанный текст с маркерами изображений (IMAGE_i) и словарь изображений с ключами в виде маркеров.
+       Таблицы заменяются на их разметку и маркеры, картинки остаются как маркеры"""
     images = pdf2image.convert_from_path(pdf_path)
     ans = ""
+    images_dict = {}
+    global_image_idx = 0
 
     for i, image in enumerate(images):
-        text_without_tables = image_to_text_without_tables(image)
-        tables_dict = image_to_text_from_tables(image)
+        text_without_tables, next_idx = image_to_text_without_pictures_and_tables(image, global_image_idx)
+        tables_dict, next_idx2 = image_to_text_from_tables(image, global_image_idx)
+        
+        global_image_idx = max(next_idx, next_idx2)
 
         for key, table_image in tables_dict.items():
+            images_dict[key] = table_image
             processed_table = add_table_schema(table_image)
-            text_without_tables = text_without_tables.replace(key, processed_table)
+            text_without_tables = text_without_tables.replace(key, f"{processed_table}\n{key}")
         
         ans += text_without_tables
     
-    return ans
-
-# print(pdf_to_text("../pdf_files/example1.pdf"))
+    return ans, images_dict

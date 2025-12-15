@@ -59,6 +59,11 @@ prompt_for_small_texts = """
 - Не разбивай одну цельную идею на несколько слайдов
 - Не более 10 слайдов
 
+РЕЛЕВАНТНЫЕ СЕГМЕНТЫ:
+{" ".join(relevant_segments) if relevant_segments else "Нет релевантных сегментов"}
+
+На основе релевантных сегментов и исходного текста создай слайды, используя информацию из релевантных сегментов для наполнения описания слайда.
+
 ДЛЯ КАЖДОГО СЛАЙДА УКАЖИ:
 - `title`: Яркое и понятное название (до 7 слов)
 - `description`: 2-4 предложения, раскрывающие суть идеи согласно предосталенному тексту. Пиши плотно, по делу.
@@ -106,7 +111,15 @@ def generate_slides_for_chunk(chunk: str, chunk_index: int, chunks_num: int, api
 
             if response.status_code == 200:
                 result = response.json()
-                content = result['choices'][0]['message']['content']
+                try:
+                    content = result['choices'][0]['message']['content']
+                except KeyError:
+                    if 'choices' in result:
+                        content = result['choices'][0]['message']['content']
+                    elif 'response' in result:
+                        content = result['response']
+                    else:
+                        content = ""
                 
                 print(f"Content type: {type(content)}")
                 
@@ -146,13 +159,18 @@ def generate_slides_for_chunk(chunk: str, chunk_index: int, chunks_num: int, api
     print("Can't reach llm")
     return []
 
-def generate_all_slides_plans(chunks: List[str], api_key: str, delay: float = 1.0) -> List[List[Dict]]: 
-    slides = []
 
+def generate_all_slides_plans(chunks: List[str], api_key: str, delay: float = 0.5, relevant_segments: list = None) -> List[List[Dict]]:
+    slides = []
+    
+    if relevant_segments is None:
+        relevant_segments = []
+    
     for i, chunk in enumerate(chunks):
         print(f"Processing chunk {i+1}/{len(chunks)}...")
         
-        chunk_slides = generate_slides_for_chunk(chunk, i, len(chunks), api_key)
+        chunk_relevant_segments = [relevant_segments[i]] if i < len(relevant_segments) else []
+        chunk_slides = generate_slides_for_chunk(chunk, i, len(chunks), api_key, chunk_relevant_segments)
         slides.append(chunk_slides)
         
         # if i < len(chunks) - 1:
@@ -160,18 +178,113 @@ def generate_all_slides_plans(chunks: List[str], api_key: str, delay: float = 1.
     
     return slides
 
-# def generate_all_slides_plans_parallel(chunks: List[str], api_key: str, max_workers: int = 3) -> List[List[Dict]]:
-#     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-#         futures = [
-#             executor.submit(generate_slides_for_chunk, chunk, i, len(chunks), api_key)
-#             for i, chunk in enumerate(chunks)
-#         ]
-        
-#         slides = []
-#         for future in concurrent.futures.as_completed(futures):
-#             slides.append(future.result())
+
+def generate_slide_descriptions_with_context(slides: List[Dict], relevant_segments: List[str], api_key: str, has_visualizations: List[bool] = None) -> List[Dict]:
+    """
+    Генерирует описания слайдов с учетом релевантных сегментов и наличия визуализаций
+    """
+    if has_visualizations is None:
+        has_visualizations = [False] * len(slides)
     
-#     return sorted(slides, key=lambda x: x[0]['chunk_index'] if x else 0)
+    updated_slides = []
+    
+    for i, (slide, segment, has_vis) in enumerate(zip(slides, relevant_segments, has_visualizations)):
+        title = slide.get('title', '')
+        original_description = slide.get('description', '')
+        
+        if has_vis:
+            text_volume_instruction = "Текст должен быть кратким, не более 2-3 коротких предложений, так как на слайде будет визуализация."
+            max_length = "2-3 коротких предложения"
+        else:
+            text_volume_instruction = "Текст должен быть более подробным, 4-6 предложений, так как на слайде нет визуализации."
+            max_length = "4-6 предложений"
+        
+        prompt = f"""
+РЕЛЕВАНТНЫЙ СЕГМЕНТ:
+{segment}
+
+НАЗВАНИЕ СЛАЙДА:
+{title}
+
+ПЕРВОНАЧАЛЬНОЕ ОПИСАНИЕ:
+{original_description}
+
+Твоя задача - создать новое описание слайда на основе релевантного сегмента и названия слайда.
+
+{text_volume_instruction}
+
+Создай описание, которое:
+1. Использует информацию из релевантного сегмента
+2. Соответствует названию слайда
+3. Имеет объем: {max_length}
+4. Логично связано с содержанием
+
+Верни ответ в формате JSON:
+{{
+    "description": "Новое описание слайда"
+}}
+"""
+        
+        try:
+            response = requests.post(
+                url="https://openrouter.ai/api/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                data=json.dumps({
+                    "model": "google/gemini-2.0-flash-001",
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ],
+                })
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+                try:
+                    content = result['choices'][0]['message']['content']
+                except KeyError:
+                    if 'choices' in result:
+                        content = result['choices'][0]['message']['content']
+                    elif 'response' in result:
+                        content = result['response']
+                    else:
+                        content = ""
+                
+                if content:
+                    try:
+                        cleaned_content = content.strip()
+                        if cleaned_content.startswith('```json'):
+                            cleaned_content = cleaned_content[7:]
+                        if cleaned_content.startswith('```'):
+                            cleaned_content = cleaned_content[3:]
+                        if cleaned_content.endswith('```'):
+                            cleaned_content = cleaned_content[:-3]
+                        
+                        cleaned_content = cleaned_content.strip()
+                        
+                        description_data = json.loads(cleaned_content)
+                        new_description = description_data.get("description", original_description)
+                    except json.JSONDecodeError:
+                        new_description = original_description
+                else:
+                    new_description = original_description
+            else:
+                new_description = original_description
+                
+        except Exception:
+            new_description = original_description
+        
+        updated_slide = slide.copy()
+        updated_slide['description'] = new_description
+        updated_slides.append(updated_slide)
+    
+    return updated_slides
+
 
 def merge_slides_plans(slides: List[List[Dict]]) -> List[Dict]:
     merged_slides = []
@@ -181,8 +294,9 @@ def merge_slides_plans(slides: List[List[Dict]]) -> List[Dict]:
     
     return merged_slides
 
-def create_presentation_plan(chunks: List[str], api_key: str) -> List[Dict]:
-    all_slides_plans = generate_all_slides_plans(chunks, api_key)
+
+def create_presentation_plan(chunks: List[str], api_key: str, relevant_segments: list = None) -> List[Dict]:
+    all_slides_plans = generate_all_slides_plans(chunks, api_key, relevant_segments=relevant_segments)
     
     final_slides_plan = merge_slides_plans(all_slides_plans)
 
