@@ -5,46 +5,6 @@ from pptx.util import Inches, Pt
 from pptx.enum.text import MSO_AUTO_SIZE
 from pptx.dml.color import RGBColor
 
-
-def generate_color_scheme(presentation_name: str):
-    """
-    Генерирует пастельную цветовую схему на основе хеширования названия презентации
-    """
-    hash_input = presentation_name.encode('utf-8')
-    hash_obj = hashlib.md5(hash_input)
-    hex_dig = hash_obj.hexdigest()
-    
-    r = int(hex_dig[0:2], 16) % 256
-    g = int(hex_dig[2:4], 16) % 256
-    b = int(hex_dig[4:6], 16) % 256
-    
-    background_lightness = 252 
-    background_color = RGBColor(background_lightness, background_lightness, background_lightness)
-    
-    pastel_factor = 0.25  
-    pastel_r = min(255, int(r  + 255 * (1 - pastel_factor)))
-    pastel_g = min(255, int(g  + 255 * (1 - pastel_factor)))
-    pastel_b = min(255, int(b  + 255 * (1 - pastel_factor)))
-    
-    primary_color = RGBColor(pastel_r, pastel_g, pastel_b)
-    
-    accent_saturation = 0.2
-    accent_r = min(255, int(r * accent_saturation + 255 * (1 - accent_saturation)))
-    accent_g = min(255, int(g * accent_saturation + 255 * (1 - accent_saturation)))
-    accent_b = min(255, int(b * accent_saturation + 255 * (1 - accent_saturation)))
-    accent_color = RGBColor(accent_r, accent_g, accent_b)
-    
-    brightness = (0.299 * pastel_r + 0.587 * pastel_g + 0.114 * pastel_b) / 255
-    text_color = RGBColor(0, 0, 0) if brightness > 0.5 else RGBColor(255, 255, 255)
-    
-    return {
-        'primary': primary_color,
-        'background': background_color,
-        'accent': accent_color,
-        'text': text_color
-    }
-
-
 def generate_color_scheme(presentation_name: str):
     """
     Генерирует цветовую схему на основе хеширования названия презентации
@@ -57,24 +17,25 @@ def generate_color_scheme(presentation_name: str):
     g = int(hex_dig[2:4], 16) % 256
     b = int(hex_dig[4:6], 16) % 256
     
-    background_lightness = 252  
-    background_color = RGBColor(background_lightness, background_lightness, background_lightness)
+    bg_factor = 0.15
+    background_r = min(255, int(r * bg_factor + 240 * (1 - bg_factor)))
+    background_g = min(255, int(g * bg_factor + 240 * (1 - bg_factor)))
+    background_b = min(255, int(b * bg_factor + 240 * (1 - bg_factor)))
+    background_color = RGBColor(background_r, background_g, background_b)
     
-    pastel_factor = 0.25 
-    pastel_r = min(255, int(r * pastel_factor + 255 * (1 - pastel_factor)))
-    pastel_g = min(255, int(g * pastel_factor + 255 * (1 - pastel_factor)))
-    pastel_b = min(255, int(b * pastel_factor + 255 * (1 - pastel_factor)))
-    
+    pastel_factor = 0.4
+    pastel_r = min(255, int(r * pastel_factor + 220 * (1 - pastel_factor)))
+    pastel_g = min(255, int(g * pastel_factor + 220 * (1 - pastel_factor)))
+    pastel_b = min(255, int(b * pastel_factor + 220 * (1 - pastel_factor)))
     primary_color = RGBColor(pastel_r, pastel_g, pastel_b)
     
-    accent_saturation = 0.6 
-    accent_r = min(255, int(r * accent_saturation + 255 * (1 - accent_saturation)))
-    accent_g = min(255, int(g * accent_saturation + 255 * (1 - accent_saturation)))
-    accent_b = min(255, int(b * accent_saturation + 255 * (1 - accent_saturation)))
+    accent_saturation = 0.7
+    accent_r = min(255, int(r * accent_saturation + 180 * (1 - accent_saturation)))
+    accent_g = min(255, int(g * accent_saturation + 180 * (1 - accent_saturation)))
+    accent_b = min(255, int(b * accent_saturation + 180 * (1 - accent_saturation)))
     accent_color = RGBColor(accent_r, accent_g, accent_b)
     
-    brightness = (0.299 * pastel_r + 0.587 * pastel_g + 0.114 * pastel_b) / 255
-    text_color = RGBColor(0, 0, 0) if brightness > 0.5 else RGBColor(255, 255, 255)
+    text_color = RGBColor(40, 40, 40)
     
     return {
         'primary': primary_color,
@@ -97,85 +58,83 @@ def apply_slide_styling(slide, color_scheme):
         slide_width = slide.width
         slide_height = slide.height
         
-        import hashlib
         slide_hash = hashlib.md5(str(slide.slide_id).encode()).hexdigest()
         angle_hex = int(slide_hash[:2], 16)
-        division_angle = (angle_hex % 60) - 30  
+        division_angle = (angle_hex % 60) - 30
         
         primary_color = color_scheme['primary']
         r, g, b = primary_color.rgb[0], primary_color.rgb[1], primary_color.rgb[2]
         
-        bg_lightness = 252
-        frag1_r = min(255, int(r * 0.01 + bg_lightness * 0.99))
-        frag1_g = min(255, int(g * 0.01 + bg_lightness * 0.99))
-        frag1_b = min(255, int(b * 0.01 + bg_lightness * 0.99))
+        bg_r, bg_g, bg_b = color_scheme['background'].rgb[0], color_scheme['background'].rgb[1], color_scheme['background'].rgb[2]
+        
+        frag1_r = min(255, int(r * 0.05 + bg_r * 0.95))
+        frag1_g = min(255, int(g * 0.05 + bg_g * 0.95))
+        frag1_b = min(255, int(b * 0.05 + bg_b * 0.95))
         fragment1_color = RGBColor(frag1_r, frag1_g, frag1_b)
         
-        frag2_r = min(255, int(r * 0.03 + bg_lightness * 0.97))
-        frag2_g = min(255, int(g * 0.03 + bg_lightness * 0.97))
-        frag2_b = min(255, int(b * 0.03 + bg_lightness * 0.97))
+        frag2_r = min(255, int(r * 0.12 + bg_r * 0.88))
+        frag2_g = min(255, int(g * 0.12 + bg_g * 0.88))
+        frag2_b = min(255, int(b * 0.12 + bg_b * 0.88))
         fragment2_color = RGBColor(frag2_r, frag2_g, frag2_b)
         
-        frag3_r = min(255, int(r * 0.05 + bg_lightness * 0.95))
-        frag3_g = min(255, int(g * 0.05 + bg_lightness * 0.95))
-        frag3_b = min(255, int(b * 0.05 + bg_lightness * 0.95))
+        frag3_r = min(255, int(r * 0.2 + bg_r * 0.8))
+        frag3_g = min(255, int(g * 0.2 + bg_g * 0.8))
+        frag3_b = min(255, int(b * 0.2 + bg_b * 0.8))
         fragment3_color = RGBColor(frag3_r, frag3_g, frag3_b)
         
         diagonal_shape1 = slide.shapes.add_shape(
-            1,  
-            Inches(-6),     
-            Inches(0),      
-            Inches(35),     
-            Inches(3)       
+            1,
+            Inches(-6),
+            Inches(0),
+            Inches(35),
+            Inches(3)
         )
         diagonal_shape1.fill.solid()
         diagonal_shape1.fill.fore_color.rgb = fragment1_color
-        diagonal_shape1.line.color.rgb = color_scheme['background']
-        diagonal_shape1.line.width = Pt(0.1)
-        
+        diagonal_shape1.line.color.rgb = fragment1_color
+        diagonal_shape1.line.width = Pt(0)
         diagonal_shape1.rotation = division_angle
         
         diagonal_shape2 = slide.shapes.add_shape(
-            1, 
-            Inches(-6),     
-            Inches(2.5),     
-            Inches(35),      
-            Inches(2.5)    
+            1,
+            Inches(-6),
+            Inches(2.5),
+            Inches(35),
+            Inches(2.5)
         )
         diagonal_shape2.fill.solid()
         diagonal_shape2.fill.fore_color.rgb = fragment2_color
-        diagonal_shape2.line.color.rgb = color_scheme['background']
-        diagonal_shape2.line.width = Pt(0.1)
-        
-        diagonal_shape2.rotation = -division_angle 
+        diagonal_shape2.line.color.rgb = fragment2_color
+        diagonal_shape2.line.width = Pt(0)
+        diagonal_shape2.rotation = -division_angle
         
         diagonal_shape3 = slide.shapes.add_shape(
-            1,  
-            Inches(-6),     
-            Inches(4.5),   
-            Inches(35),     
-            Inches(2)       
+            1,
+            Inches(-6),
+            Inches(4.5),
+            Inches(35),
+            Inches(2)
         )
         diagonal_shape3.fill.solid()
         diagonal_shape3.fill.fore_color.rgb = fragment3_color
-        diagonal_shape3.line.color.rgb = color_scheme['background']
-        diagonal_shape3.line.width = Pt(0.1)
+        diagonal_shape3.line.color.rgb = fragment3_color
+        diagonal_shape3.line.width = Pt(0)
+        diagonal_shape3.rotation = division_angle + 10
         
-        diagonal_shape3.rotation = division_angle + 10  
         accent_bar = slide.shapes.add_shape(
-            1,  
-            Inches(0),       
-            Inches(7.4),     
-            Inches(13.33),  
-            Inches(0.1)      
+            1,
+            Inches(0),
+            Inches(7.4),
+            Inches(13.33),
+            Inches(0.1)
         )
         accent_bar.fill.solid()
         accent_bar.fill.fore_color.rgb = color_scheme['accent']
         accent_bar.line.color.rgb = color_scheme['accent']
-        accent_bar.line.width = Pt(0.5)
+        accent_bar.line.width = Pt(0)
         
-    except:
-        pass
+    except Exception as e:
+        print(f"Ошибка применения стиля: {e}")
 
 
 def add_icon_to_slide(slide, icon_type: str, position_x: float, position_y: float, size: float = 0.5):
@@ -187,15 +146,15 @@ def add_icon_to_slide(slide, icon_type: str, position_x: float, position_y: floa
         from pptx.enum.shapes import MSO_SHAPE
         
         shapes_map = {
-            'chart': MSO_SHAPE.CHART_PLUS, 
-            'info': MSO_SHAPE.INFO, 
-            'lightning': MSO_SHAPE.BOLT, 
-            'star': MSO_SHAPE.STAR_4_POINT,  
-            'arrow': MSO_SHAPE.LEFT_ARROW,  
-            'check': MSO_SHAPE.CHECKBOX_X,  
+            'chart': MSO_SHAPE.CHART_PLUS,
+            'info': MSO_SHAPE.INFO,
+            'lightning': MSO_SHAPE.BOLT,
+            'star': MSO_SHAPE.STAR_4_POINT,
+            'arrow': MSO_SHAPE.LEFT_ARROW,
+            'check': MSO_SHAPE.CHECKBOX_X,
         }
         
-        shape_type = shapes_map.get(icon_type, MSO_SHAPE.OVAL)  
+        shape_type = shapes_map.get(icon_type, MSO_SHAPE.OVAL)
         
         icon_shape = slide.shapes.add_shape(
             shape_type,
@@ -214,7 +173,6 @@ def add_icon_to_slide(slide, icon_type: str, position_x: float, position_y: floa
     except:
         return None
 
-
 def build_presentation(slides, output_pptx: Path, presentation_name: str = "Presentation"):
     """
     Создание презентации по слайдам с поддержкой визуализаций и стилизацией
@@ -229,14 +187,7 @@ def build_presentation(slides, output_pptx: Path, presentation_name: str = "Pres
     for slide_data in slides:
         has_visualization = slide_data.get("visualization", {}).get("needed", False)
         
-        if has_visualization:
-            slide_layout = prs.slide_layouts[6]
-        else:
-            try:
-                slide_layout = prs.slide_layouts[6]
-            except IndexError:
-                slide_layout = prs.slide_layouts[1]
-        
+        slide_layout = prs.slide_layouts[6]
         slide = prs.slides.add_slide(slide_layout)
         
         apply_slide_styling(slide, color_scheme)
@@ -269,18 +220,8 @@ def build_presentation(slides, output_pptx: Path, presentation_name: str = "Pres
     prs.save(output_pptx.as_posix())
     print(f"✅ Презентация сохранена: {output_pptx}")
 
-
-def _add_slide_full_text(slide, slide_data, slide_width, slide_height, color_scheme=None):
+def _add_slide_full_text(slide, slide_data, slide_width, slide_height, color_scheme):
     """Добавляет слайд с полноразмерным текстом (когда нет визуализации)"""
-    if color_scheme is None:
-        from pptx.dml.color import RGBColor
-        color_scheme = {
-            'primary': RGBColor(41, 98, 255),  
-            'background': RGBColor(255, 255, 255), 
-            'accent': RGBColor(33, 33), 
-            'text': RGBColor(0, 0, 0) 
-        }
-    
     margin_left = Inches(0.8)
     margin_right = Inches(0.8)
     top_margin = Inches(0.6)
@@ -306,10 +247,10 @@ def _add_slide_full_text(slide, slide_data, slide_width, slide_height, color_sch
     for paragraph in title_tf.paragraphs:
         paragraph.alignment = 1
         for run in paragraph.runs:
-            run.font.color.rgb = color_scheme['primary']  
-            run.font.name = 'Calibri' 
+            run.font.color.rgb = color_scheme['accent']
+            run.font.name = 'Calibri'
             run.font.bold = True
-            run.font.size = Pt(18) 
+            run.font.size = Pt(32)
 
     body_shape = slide.shapes.add_textbox(body_left, body_top, body_width, body_height)
     tf = body_shape.text_frame
@@ -328,43 +269,20 @@ def _add_slide_full_text(slide, slide_data, slide_width, slide_height, color_sch
     else:
         base_size = 26
 
-    title_size = base_size + 4
-
     for paragraph in tf.paragraphs:
         for run in paragraph.runs:
             run.font.size = Pt(base_size)
-            run.font.color.rgb = color_scheme['text']  
-            run.font.name = 'Arial' 
-
-    for paragraph in title_tf.paragraphs:
-        for run in paragraph.runs:
-            run.font.size = Pt(title_size)
-            run.font.bold = True
-            run.font.color.rgb = color_scheme['primary']
-            run.font.name = 'Calibri' 
-    try:
-        add_icon_to_slide(slide, 'lightning', 0.2, 0.2, 0.3)  
-    except:
-        pass  
+            run.font.color.rgb = color_scheme['text']
+            run.font.name = 'Calibri'
 
 
-def _add_slide_with_vertical_visualization(slide, slide_data, slide_width, slide_height, color_scheme=None):
+def _add_slide_with_vertical_visualization(slide, slide_data, slide_width, slide_height, color_scheme):
     """Добавляет слайд с вертикальной визуализацией (рядом с текстом)"""
-    if color_scheme is None:
-        from pptx.dml.color import RGBColor
-        color_scheme = {
-            'primary': RGBColor(41, 98, 255),  
-            'background': RGBColor(255, 255, 255), 
-            'accent': RGBColor(33, 33, 33), 
-            'text': RGBColor(0, 0, 0) 
-        }
-    
     margin = Inches(0.5)
     between = Inches(0.3)
     title_height = Inches(0.7)
     
     vis_data = slide_data.get("visualization", {})
-    vis_type = vis_data.get("type", "")
     
     text_width = slide_width * 0.5 - margin
     image_width = slide_width * 0.5 - margin
@@ -390,20 +308,10 @@ def _add_slide_with_vertical_visualization(slide, slide_data, slide_width, slide
     for paragraph in title_tf.paragraphs:
         paragraph.alignment = 1
         for run in paragraph.runs:
-            run.font.color.rgb = color_scheme['primary']
-            run.font.name = 'Calibri' 
+            run.font.color.rgb = color_scheme['accent']
+            run.font.name = 'Calibri'
             run.font.bold = True
-            run.font.size = Pt(16) 
-    
-    try:
-        add_icon_to_slide(slide, 'chart', 0.2, 0.2, 0.3)  
-    except:
-        pass 
-    
-    try:
-        add_icon_to_slide(slide, 'star', 0.15, 0.15, 0.25) 
-    except:
-        pass 
+            run.font.size = Pt(28)
 
     text_shape = slide.shapes.add_textbox(text_left, text_top, text_width, text_height)
     text_tf = text_shape.text_frame
@@ -421,21 +329,12 @@ def _add_slide_with_vertical_visualization(slide, slide_data, slide_width, slide
         base_size = 20
     else:
         base_size = 22
-
-    title_size = base_size + 4
     
     for paragraph in text_tf.paragraphs:
         for run in paragraph.runs:
             run.font.size = Pt(base_size)
-            run.font.color.rgb = color_scheme['text'] 
-            run.font.name = 'Arial'  
-    
-    for paragraph in title_tf.paragraphs:
-        for run in paragraph.runs:
-            run.font.size = Pt(title_size)
-            run.font.bold = True
-            run.font.color.rgb = color_scheme['primary'] 
-            run.font.name = 'Calibri'  
+            run.font.color.rgb = color_scheme['text']
+            run.font.name = 'Calibri'
     
     image_path = vis_data.get("image_path")
     
@@ -465,40 +364,19 @@ def _add_slide_with_vertical_visualization(slide, slide_data, slide_width, slide
                 width=final_width,
                 height=final_height
             )
-            
-       
-                        
         except Exception as e:
             print(f"Ошибка добавления картинки {image_path}: {e}")
-            error_shape = slide.shapes.add_textbox(
-                image_left, image_top, image_width, Inches(0.3)
-            )
-            error_tf = error_shape.text_frame
-            error_tf.text = "Ошибка изображения"
-            for paragraph in error_tf.paragraphs:
-                for run in paragraph.runs:
-                    run.font.size = Pt(8)
     else:
         print(f"Картинка не найдена: {image_path}")
 
 
-def _add_slide_with_horizontal_visualization(slide, slide_data, slide_width, slide_height, color_scheme=None):
+def _add_slide_with_horizontal_visualization(slide, slide_data, slide_width, slide_height, color_scheme):
     """Добавляет слайд с горизонтальной визуализацией (под текстом)"""
-    if color_scheme is None:
-        from pptx.dml.color import RGBColor
-        color_scheme = {
-            'primary': RGBColor(41, 98, 255), 
-            'background': RGBColor(255, 255, 255), 
-            'accent': RGBColor(33, 33, 33),  
-            'text': RGBColor(0, 0, 0) 
-        }
-    
     margin = Inches(0.5)
     between = Inches(0.3)
     title_height = Inches(0.7)
     
     vis_data = slide_data.get("visualization", {})
-    vis_type = vis_data.get("type", "")
     
     title_left = margin
     title_top = margin
@@ -518,10 +396,10 @@ def _add_slide_with_horizontal_visualization(slide, slide_data, slide_width, sli
     for paragraph in title_tf.paragraphs:
         paragraph.alignment = 1
         for run in paragraph.runs:
-            run.font.color.rgb = color_scheme['primary'] 
-            run.font.name = 'Calibri'  
+            run.font.color.rgb = color_scheme['accent']
+            run.font.name = 'Calibri'
             run.font.bold = True
-            run.font.size = Pt(16)  
+            run.font.size = Pt(28)
 
     text_shape = slide.shapes.add_textbox(text_left, text_top, text_width, Inches(1.5))
     text_tf = text_shape.text_frame
@@ -540,22 +418,13 @@ def _add_slide_with_horizontal_visualization(slide, slide_data, slide_width, sli
     else:
         base_size = 22
 
-    title_size = base_size + 4
-
     for paragraph in text_tf.paragraphs:
         for run in paragraph.runs:
             run.font.size = Pt(base_size)
-            run.font.color.rgb = color_scheme['text']  
-            run.font.name = 'Arial'  
-
-    for paragraph in title_tf.paragraphs:
-        for run in paragraph.runs:
-            run.font.size = Pt(title_size)
-            run.font.bold = True
-            run.font.color.rgb = color_scheme['primary']
-            run.font.name = 'Calibri'  
+            run.font.color.rgb = color_scheme['text']
+            run.font.name = 'Calibri'
     
-    text_shape_height = min(Inches(2.0), slide_height - title_top - title_height - between - Inches(2.0)) 
+    text_shape_height = min(Inches(2.0), slide_height - title_top - title_height - between - Inches(2.0))
     image_top = text_top + text_shape_height + between
     image_left = margin
     image_width = slide_width - 2 * margin
@@ -589,18 +458,7 @@ def _add_slide_with_horizontal_visualization(slide, slide_data, slide_width, sli
                 width=final_width,
                 height=final_height
             )
-            
-            
-                        
         except Exception as e:
             print(f"Ошибка добавления картинки {image_path}: {e}")
-            error_shape = slide.shapes.add_textbox(
-                image_left, image_top, image_width, Inches(0.3)
-            )
-            error_tf = error_shape.text_frame
-            error_tf.text = "Ошибка изображения"
-            for paragraph in error_tf.paragraphs:
-                for run in paragraph.runs:
-                    run.font.size = Pt(8)
     else:
         print(f"Картинка не найдена: {image_path}")
