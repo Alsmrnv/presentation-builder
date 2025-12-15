@@ -21,7 +21,7 @@ class ParagraphSegmenter(Segmenter):
             
             if (len(merged_paragraphs) > 0 and 
                 len(sentences) < self.min_sentences):
-                merged_paragraphs[-1] += "\n" + paragraph
+                merged_paragraphs[-1] += "\n\n" + paragraph
             else:
                 merged_paragraphs.append(paragraph)
         

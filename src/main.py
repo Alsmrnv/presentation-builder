@@ -662,7 +662,10 @@ from setup.setup import setup
 from rag.segmenter.window_segmenter import WindowSegmenter
 from rag.segmenter.paragraph_segmenter import ParagraphSegmenter
 from rag.presentation_gen.slide_generation import create_presentation_plan, generate_slide_descriptions_with_context
+from rag.segmenter.page_segmenter import PageSegmenter
+from rag.presentation_gen.slide_generation import create_presentation_plan
 from rag.retriever.paragraph_retriever import ParagraphRetriever
+from rag.retriever.page_retriever import PageRetriever
 from rag.presentation_gen.build_presentation import build_presentation
 from visgen.simple_enchancer import enhance_slides_with_visualizations
 from text_recognition.pdf_to_text import pdf_to_text
