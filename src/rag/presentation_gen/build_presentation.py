@@ -5,6 +5,7 @@ from pptx.util import Inches, Pt
 from pptx.enum.text import MSO_AUTO_SIZE
 from pptx.dml.color import RGBColor
 
+
 def generate_color_scheme(presentation_name: str):
     """
     Генерирует цветовую схему на основе хеширования названия презентации
@@ -29,10 +30,10 @@ def generate_color_scheme(presentation_name: str):
     pastel_b = min(255, int(b * pastel_factor + 220 * (1 - pastel_factor)))
     primary_color = RGBColor(pastel_r, pastel_g, pastel_b)
     
-    accent_saturation = 0.7
-    accent_r = min(255, int(r * accent_saturation + 180 * (1 - accent_saturation)))
-    accent_g = min(255, int(g * accent_saturation + 180 * (1 - accent_saturation)))
-    accent_b = min(255, int(b * accent_saturation + 180 * (1 - accent_saturation)))
+    accent_saturation = 0.85
+    accent_r = min(255, int(r * accent_saturation + 80 * (1 - accent_saturation)))
+    accent_g = min(255, int(g * accent_saturation + 80 * (1 - accent_saturation)))
+    accent_b = min(255, int(b * accent_saturation + 80 * (1 - accent_saturation)))
     accent_color = RGBColor(accent_r, accent_g, accent_b)
     
     text_color = RGBColor(40, 40, 40)
@@ -43,7 +44,6 @@ def generate_color_scheme(presentation_name: str):
         'accent': accent_color,
         'text': text_color
     }
-
 
 def apply_slide_styling(slide, color_scheme):
     """
@@ -462,3 +462,4 @@ def _add_slide_with_horizontal_visualization(slide, slide_data, slide_width, sli
             print(f"Ошибка добавления картинки {image_path}: {e}")
     else:
         print(f"Картинка не найдена: {image_path}")
+
