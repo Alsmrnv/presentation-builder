@@ -673,7 +673,7 @@ def main():
 
     OPENROUTER_API_KEY = os.getenv("API_KEY")
 
-    text, images_dict = pdf_to_text("../src/pdf_files/example.pdf")
+    text, images_dict = pdf_to_text("./src/pdf_files/example.pdf")
 
     window_segmenter = WindowSegmenter(text)
     chunks = window_segmenter.split()
@@ -725,7 +725,7 @@ def main():
             slides=slides_without_images,
             api_key=OPENROUTER_API_KEY,
             temp_dir="presentation_visualizations",
-            delay=0.2  # Уменьшаем задержку для ускорения
+            delay=0.2  
         )
         
         for i, slide in enumerate(enhanced_slides):

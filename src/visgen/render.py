@@ -86,7 +86,7 @@ class Renderer:
         if 'title' in layout_without_title:
             del layout_without_title['title']
 
-        return self._apply_compact_layout(fig, chart_data.layout, 'line')
+        return self._apply_compact_layout(fig, layout_without_title, 'line')
 
     def _create_bar_chart(self, chart_data: BarChartSchema) -> go.Figure:
         """Создает КОМПАКТНУЮ столбчатую диаграмму"""
@@ -111,7 +111,7 @@ class Renderer:
         if 'title' in layout_without_title:
             del layout_without_title['title']
 
-        return self._apply_compact_layout(fig, chart_data.layout, 'bar')
+        return self._apply_compact_layout(fig, layout_without_title, 'bar')
 
     def _create_pie_chart(self, chart_data: PieChartSchema) -> go.Figure:
         """Создает КОМПАКТНУЮ круговую диаграмму"""
@@ -132,7 +132,7 @@ class Renderer:
         if 'title' in layout_without_title:
             del layout_without_title['title']
 
-        return self._apply_compact_layout(fig, chart_data.layout, 'pie')
+        return self._apply_compact_layout(fig, layout_without_title, 'pie')
 
     def _create_scatter_chart(self, chart_data: ScatterChartSchema) -> go.Figure:
         """Создает КОМПАКТНУЮ точечную диаграмму"""
@@ -150,7 +150,7 @@ class Renderer:
         if 'title' in layout_without_title:
             del layout_without_title['title']
 
-        return self._apply_compact_layout(fig, chart_data.layout, 'scatter')
+        return self._apply_compact_layout(fig, layout_without_title, 'scatter')
 
     def _create_histogram(self, chart_data: HistogramSchema) -> go.Figure:
         """Создает КОМПАКТНУЮ гистограмму"""
@@ -168,7 +168,7 @@ class Renderer:
         if 'title' in layout_without_title:
             del layout_without_title['title']
 
-        return self._apply_compact_layout(fig, chart_data.layout, 'histogram')
+        return self._apply_compact_layout(fig, layout_without_title, 'histogram')
 
     def _create_table(self, chart_data: TableSchema) -> go.Figure:
         """Создает таблицу с оптимальным размером для слайда"""
